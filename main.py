@@ -32,7 +32,6 @@ app.config['SECRET_KEY'] = os.urandom(32)
 app.config['JWT_TOKEN_LOCATION'] = ['cookies']
 app.config['JWT_REFRESH_COOKIE_PATH'] = '/token/refresh'
 app.config['JWT_COOKIE_CSRF_PROTECT'] = False
-app.config['WTF_CSRF_CHECK_DEFAULT'] = False
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
@@ -165,27 +164,21 @@ def activate_user():
 @app.route('/register', methods=['GET', 'POST'])
 def register_page():
     form = RegisterForm()
-    if form.is_submitted():
-        if form.submit.data:
-            if form.validate():
-                if Users.query.filter_by(email=form.username.data).count() == 0:
-                    key = ''.join(random.choices(string.ascii_uppercase + string.digits, k=9))
-                    new_user = Users(email=form.username.data, password=form.password.data, key=key)
-                    db.session.add(new_user)
-                    db.session.commit()
-                    msg = Message("Confirm your account", sender=("Flask Service", "jesusgonzalez.flask@gmail.com"))
-                    msg.recipients = [form.username.data]
-                    msg.body = "Your account has not been confirmed, to continue click the following link: " + request.url_root.rstrip('/') + "/confirm?key=" + key
-                    mail.send(msg)
-                    flash('A verification email has been sent to ' + form.username.data)
-                    return render_template('registerPageBS.html', title='Flask', form=form)
-                else:
-                    flash('That email is already in use by another account.')
-                    return render_template('registerPageBS.html', title='Flask', form=form)
-            else:
-                return render_template('registerPageBS.html', title='Flask', form=form)
+    if form.validate_on_submit():
+        if Users.query.filter_by(email=form.username.data).count() == 0:
+            key = ''.join(random.choices(string.ascii_uppercase + string.digits, k=9))
+            new_user = Users(email=form.username.data, password=form.password.data, key=key)
+            db.session.add(new_user)
+            db.session.commit()
+            msg = Message("Confirm your account", sender=("Flask Service", "jesusgonzalez.flask@gmail.com"))
+            msg.recipients = [form.username.data]
+            msg.body = "Your account has not been confirmed, to continue click the following link: " + request.url_root.rstrip('/') + "/confirm?key=" + key
+            mail.send(msg)
+            flash('A verification email has been sent to ' + form.username.data)
+            return render_template('registerPageBS.html', title='Flask', form=form)
         else:
-            return redirect(url_for('login_page'))
+            flash('That email is already in use by another account.')
+            return render_template('registerPageBS.html', title='Flask', form=form)
     else:
         return render_template('registerPageBS.html', title='Flask', form=form)
 
