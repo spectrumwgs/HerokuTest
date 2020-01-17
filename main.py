@@ -32,6 +32,7 @@ app.config['SECRET_KEY'] = os.urandom(32)
 app.config['JWT_TOKEN_LOCATION'] = ['cookies']
 app.config['JWT_REFRESH_COOKIE_PATH'] = '/token/refresh'
 app.config['JWT_COOKIE_CSRF_PROTECT'] = False
+app.config['WTF_CSRF_CHECK_DEFAULT'] = False
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
