@@ -1,0 +1,35 @@
+{% extends 'bootstrap/base.html' %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}
+    {% if title %}{{ title }} - Register{% else %}Welcome to Microblog{% endif %}
+{% endblock %}
+
+{% block navbar %}
+    <nav class="navbar navbar-default">
+    </nav>
+{% endblock %}
+
+{% block content %}
+  <div class="container">
+    <div class="row">
+      <div class="col-sm-9 col-md-7 col-lg-5 mx-auto">
+        <div class="card my-5">
+          <div class="card-body">
+            {% with messages = get_flashed_messages() %}
+              {% if messages %}
+                {% for message in messages %}
+                  <div class="alert alert-info" role="alert">{{ message }}</div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+            <p>
+              <h5 class="card-title text-center">Sign In</h5>
+            </p>
+            {{ wtf.quick_form(form) }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
