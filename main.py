@@ -185,31 +185,27 @@ def register_page():
 
 @app.route('/', methods=['GET', 'POST'])
 def login_page():
-    try:
-        verify_jwt_in_request()
-    except Exception:
-        form = LoginForm()
-        if form.validate_on_submit():
-            try:
-                user = Users.query.filter(Users.email == form.username.data, Users.password == form.password.data).first()
-            except Exception:
-                flash('Wrong email or password.')
-                return render_template('loginPageBS.html', title='Flask', form=form)
-            if user.confirmed == 1:
-                user.login = datetime.now().strftime("%d/%m/%Y %H:%M")
-                db.session.commit()
-                access_token = create_access_token(identity=form.username.data)
-                refresh_token = create_refresh_token(identity=form.username.data)
-                resp = make_response(redirect(url_for('protected')))
-                set_access_cookies(resp, access_token)
-                set_refresh_cookies(resp, refresh_token)
-                return resp
-            else:
-                flash('Your account has not been confirmed, please check your inbox.')
-                return render_template('loginPageBS.html', title='Flask', form=form)
-        else:
+    form = LoginForm()
+    if form.validate_on_submit():
+        try:
+            user = Users.query.filter(Users.email == form.username.data, Users.password == form.password.data).first()
+        except Exception:
+            flash('Wrong email or password.')
             return render_template('loginPageBS.html', title='Flask', form=form)
-    return redirect(url_for('protected'))
+        if user.confirmed == 1:
+            user.login = datetime.now().strftime("%d/%m/%Y %H:%M")
+            db.session.commit()
+            access_token = create_access_token(identity=form.username.data)
+            refresh_token = create_refresh_token(identity=form.username.data)
+            resp = make_response(redirect(url_for('protected')))
+            set_access_cookies(resp, access_token)
+            set_refresh_cookies(resp, refresh_token)
+            return resp
+        else:
+            flash('Your account has not been confirmed, please check your inbox.')
+            return render_template('loginPageBS.html', title='Flask', form=form)
+    else:
+        return render_template('loginPageBS.html', title='Flask', form=form)
 
 
 @app.route('/index', methods=['GET', 'POST'])
