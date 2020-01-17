@@ -190,6 +190,7 @@ def login_page():
     if form.validate_on_submit():
         try:
             user = Users.query.filter(Users.email == form.username.data, Users.password == form.password.data).first()
+            print("{} has logged in.".format(user.email))
         except Exception:
             flash('Wrong email or password.')
             return render_template('loginPageBS.html', title='Flask', form=form)
