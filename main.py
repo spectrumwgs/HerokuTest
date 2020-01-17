@@ -165,49 +165,66 @@ def activate_user():
 @app.route('/register', methods=['GET', 'POST'])
 def register_page():
     form = RegisterForm()
-    if form.validate_on_submit():
-        if Users.query.filter_by(email=form.username.data).count() == 0:
-            key = ''.join(random.choices(string.ascii_uppercase + string.digits, k=9))
-            new_user = Users(email=form.username.data, password=form.password.data, key=key)
-            db.session.add(new_user)
-            db.session.commit()
-            msg = Message("Confirm your account", sender=("Flask Service", "jesusgonzalez.flask@gmail.com"))
-            msg.recipients = [form.username.data]
-            msg.body = "Your account has not been confirmed, to continue click the following link: " + request.url_root.rstrip('/') + "/confirm?key=" + key
-            mail.send(msg)
-            flash('A verification email has been sent to ' + form.username.data)
-            return render_template('registerPageBS.html', title='Flask', form=form)
+    if form.is_submitted():
+        if form.submit.data:
+            if form.validate():
+                if Users.query.filter_by(email=form.username.data).count() == 0:
+                    key = ''.join(random.choices(string.ascii_uppercase + string.digits, k=9))
+                    new_user = Users(email=form.username.data, password=form.password.data, key=key)
+                    db.session.add(new_user)
+                    db.session.commit()
+                    msg = Message("Confirm your account", sender=("Flask Service", "jesusgonzalez.flask@gmail.com"))
+                    msg.recipients = [form.username.data]
+                    msg.body = "Your account has not been confirmed, to continue click the following link: " + request.url_root.rstrip('/') + "/confirm?key=" + key
+                    mail.send(msg)
+                    flash('A verification email has been sent to ' + form.username.data)
+                    return render_template('registerPageBS.html', title='Flask', form=form)
+                else:
+                    flash('That email is already in use by another account.')
+                    return render_template('registerPageBS.html', title='Flask', form=form)
+            else:
+                return render_template('registerPageBS.html', title='Flask', form=form)
         else:
-            flash('That email is already in use by another account.')
-            return render_template('registerPageBS.html', title='Flask', form=form)
+            return redirect(url_for('login_page'))
     else:
         return render_template('registerPageBS.html', title='Flask', form=form)
 
 
 @app.route('/', methods=['GET', 'POST'])
 def login_page():
-    form = LoginForm()
-    if form.validate_on_submit():
-        try:
-            user = Users.query.filter(Users.email == form.username.data, Users.password == form.password.data).first()
-            print("{} has logged in.".format(user.email))
-        except Exception:
-            flash('Wrong email or password.')
-            return render_template('loginPageBS.html', title='Flask', form=form)
-        if user.confirmed == 1:
-            user.login = datetime.now().strftime("%d/%m/%Y %H:%M")
-            db.session.commit()
-            access_token = create_access_token(identity=form.username.data)
-            refresh_token = create_refresh_token(identity=form.username.data)
-            resp = make_response(redirect(url_for('protected')))
-            set_access_cookies(resp, access_token)
-            set_refresh_cookies(resp, refresh_token)
-            return resp
+    try:
+        verify_jwt_in_request()
+    except Exception:
+        form = LoginForm()
+        if form.is_submitted():
+            if form.submit.data:
+                if form.validate():
+                    try:
+                        user = Users.query.filter(Users.email == form.username.data, Users.password == form.password.data).first()
+                        print("{} has logged in.".format(user.email))
+                    except Exception:
+                        flash('Wrong email or password.')
+                        return render_template('loginPageBS.html', title='Flask', form=form)
+                    if user.confirmed == 1:
+                        user.login = datetime.now().strftime("%d/%m/%Y %H:%M")
+                        db.session.commit()
+                        access_token = create_access_token(identity=form.username.data)
+                        refresh_token = create_refresh_token(identity=form.username.data)
+                        resp = make_response(redirect(url_for('protected')))
+                        set_access_cookies(resp, access_token)
+                        set_refresh_cookies(resp, refresh_token)
+                        return resp
+                    else:
+                        flash('Your account has not been confirmed, please check your inbox.')
+                        return render_template('loginPageBS.html', title='Flask', form=form)
+                else:
+                    return render_template('loginPageBS.html', title='Flask', form=form)
+            else:
+                return redirect(url_for('register_page'))
         else:
-            flash('Your account has not been confirmed, please check your inbox.')
             return render_template('loginPageBS.html', title='Flask', form=form)
-    else:
-        return render_template('loginPageBS.html', title='Flask', form=form)
+    return redirect(url_for('protected'))
+
 
 
 @app.route('/index', methods=['GET', 'POST'])

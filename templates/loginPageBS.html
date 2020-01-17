@@ -20,17 +20,17 @@
       <div class="col-sm-9 col-md-7 col-lg-5 mx-auto">
         <div class="card my-5">
           <div class="card-body">
-            {% with messages = get_flashed_messages() %}
-              {% if messages %}
-                {% for message in messages %}
-                  <div class="alert alert-info" role="alert">{{ message }}</div>
-                {% endfor %}
-              {% endif %}
-            {% endwith %}
-            <p>
-              <h5 class="card-title text-center">Sign In</h5>
-            </p>
+            <h5 class="card-title text-center">Sign In</h5>
             {{ wtf.quick_form(form) }}
+            <p>
+              {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                  {% for message in messages %}
+                    <div class="alert alert-info" role="alert">{{ message }}</div>
+                  {% endfor %}
+                {% endif %}
+              {% endwith %}
+            </p>
           </div>
         </div>
       </div>
