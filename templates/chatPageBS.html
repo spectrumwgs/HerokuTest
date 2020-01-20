@@ -1,0 +1,52 @@
+{% extends 'bootstrap/base.html' %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% import "bootstrap/utils.html" as utils %}
+
+{% block styles %}
+  <link rel="stylesheet" href="{{url_for('.static/css', filename='bootstrap.min.css')}}">
+  <link rel="stylesheet" href="{{url_for('.static/css', filename='application.css')}}">
+  {{super()}}
+{% endblock %}
+
+{% block scripts %}
+    <script type="text/javascript" src="{{url_for('.static/js', filename='jquery-3.3.1.min.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('.static/js', filename='reconnecting-websocket.min.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('.static/js', filename='application.js')}}"></script>
+    {{super()}}
+{% endblock %}
+
+{% block title %}
+    {% if title %}{{ title }} - Chat{% else %}Welcome to Microblog{% endif %}
+{% endblock %}
+
+{% block navbar %}
+    <nav class="navbar navbar-default">
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" href="/logout">Logout</a>
+            </li>
+        </ul>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div class="jumbotron">
+            <h1>Messages:</h1>
+        </div>
+        <form id="input-form" class="form-inline">
+            <div class="form-group">
+              <input id="input-handle" type="text" class="form-control" placeholder="Enter handle" autofocus />
+            </div>
+            <div class="form-group">
+              <input id="input-text" type="text" class="form-control" placeholder="Enter chat text here!" autofocus />
+            </div>
+            <button class="btn btn-primary" type="submit">Send</button>
+        </form>
+        <div class="page-header">
+            <h1>Chat</h1>
+        </div>
+        <div id="chat-text">
+        </div>
+    </div>
+{% endblock %}

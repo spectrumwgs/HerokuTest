@@ -1,3 +1,6 @@
+import os
+import redis
+import gevent
 import string
 import random
 
@@ -9,7 +12,7 @@ from wtforms import StringField, PasswordField, BooleanField, SubmitField
 from wtforms.validators import DataRequired, Email, EqualTo
 from flask_mail import Mail
 from flask_mail import Message
-from flask_socketio import SocketIO, emit
+from flask_sockets import Sockets
 from flask_bootstrap import Bootstrap
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
@@ -21,14 +24,15 @@ from flask_jwt_extended import (
 )
 from sqlalchemy import Column, String, Integer, Boolean, desc
 from datetime import datetime
-import os
+
+# Settings
+REDIS_URL = os.environ['REDIS_URL']
+REDIS_CHAN = 'chat'
 
 # Set up
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///PyTest.db'
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root@localhost/PyTest'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-# app.config['SECRET_KEY'] = os.urandom(32)
 app.config['SECRET_KEY'] = "JUSTCHECKING1234"
 app.config['JWT_TOKEN_LOCATION'] = ['cookies']
 app.config['JWT_REFRESH_COOKIE_PATH'] = '/token/refresh'
@@ -38,9 +42,11 @@ app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = 'jesusgonzalez.flask@gmail.com'
 app.config['MAIL_PASSWORD'] = 'irdsrvhzbumhopto'
+app.debug = 'DEBUG' in os.environ
 
 # Extras
-socketio = SocketIO(app)
+sockets = Sockets(app)
+redis = redis.from_url(REDIS_URL)
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 jwt = JWTManager(app)
@@ -49,9 +55,40 @@ mail = Mail(app)
 
 
 # Handlers
-@socketio.on('sendMessage')
-def send_message(json):
-    emit('new_message', json, namespace='/chat', broadcast=True)
+class ChatBackend(object):
+
+    def __init__(self):
+        self.clients = list()
+        self.pubsub = redis.pubsub()
+        self.pubsub.subscribe(REDIS_CHAN)
+
+    def __iter_data(self):
+        for message in self.pubsub.listen():
+            data = message.get('data')
+            if message['type'] == 'message':
+                app.logger.info(u'Sending message: {}'.format(data))
+                yield data
+
+    def register(self, client):
+        self.clients.append(client)
+
+    def send(self, client, data):
+        try:
+            client.send(data)
+        except Exception:
+            self.clients.remove(client)
+
+    def run(self):
+        for data in self.__iter_data():
+            for client in self.clients:
+                gevent.spawn(self.send, client, data)
+
+    def start(self):
+        gevent.spawn(self.run)
+
+
+chats = ChatBackend()
+chats.start()
 
 
 # Tables
@@ -128,7 +165,7 @@ class MessageForm(FlaskForm):
     submit = SubmitField('Send')
 
 
-# API
+# Endpoints
 @app.route('/user', methods=['GET', 'POST'])
 @app.route('/user/', methods=['GET', 'POST'])
 def user_main():
@@ -226,21 +263,10 @@ def login_page():
     return redirect(url_for('protected'))
 
 
-
 @app.route('/index', methods=['GET', 'POST'])
 @jwt_required
 def protected():
-    user = Users.query.filter_by(email=get_jwt_identity()).first()
-    form = MessageForm()
-    if form.validate_on_submit():
-        new_msg = Messages(user=user.email, message=form.message.data, posted=datetime.now().strftime("%d/%m/%Y %H:%M"))
-        db.session.add(new_msg)
-        db.session.commit()
-        return redirect(url_for('protected'))
-    last_messages = Messages.query.order_by(desc(Messages.id)).limit(10).all()
-    msg_result = messages_schema.dump(last_messages)
-    send_message(msg_result.reverse())
-    return render_template('mainPageBS.html', title='Flask', form=form, msg=msg_result)
+    return render_template('chatPageBS.html', title='Flask')
 
 
 @app.route('/logout', methods=['GET', 'POST'])
@@ -250,5 +276,21 @@ def logout():
     return resp, 200
 
 
-if __name__ == '__main__':
-    socketio.run(app)
+# Websocket Endpoints
+@sockets.route('/submit')
+def inbox(ws):
+    while not ws.closed:
+        gevent.sleep(0.1)
+        message = ws.receive()
+
+        if message:
+            app.logger.info(u'Inserting message: {}'.format(message))
+            redis.publish(REDIS_CHAN, message)
+
+
+@sockets.route('/receive')
+def outbox(ws):
+    chats.register(ws)
+
+    while not ws.closed:
+        gevent.sleep(0.1)
