@@ -294,3 +294,7 @@ def outbox(ws):
 
     while not ws.closed:
         gevent.sleep(0.1)
+
+
+if __name__ == "__main__":
+    app.run()

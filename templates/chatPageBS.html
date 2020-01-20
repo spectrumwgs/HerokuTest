@@ -3,15 +3,15 @@
 {% import "bootstrap/utils.html" as utils %}
 
 {% block styles %}
-  <link rel="stylesheet" href="{{url_for('.static/css', filename='bootstrap.min.css')}}">
-  <link rel="stylesheet" href="{{url_for('.static/css', filename='application.css')}}">
+  <link rel="stylesheet" href="static/css/bootstrap.min.css">
+  <link rel="stylesheet" href="static/css/application.css">
   {{super()}}
 {% endblock %}
 
 {% block scripts %}
-    <script type="text/javascript" src="{{url_for('.static/js', filename='jquery-3.3.1.min.js')}}"></script>
-    <script type="text/javascript" src="{{url_for('.static/js', filename='reconnecting-websocket.min.js')}}"></script>
-    <script type="text/javascript" src="{{url_for('.static/js', filename='application.js')}}"></script>
+    <script type="text/javascript" src="static/js/jquery-3.3.1.min.js"></script>
+    <script type="text/javascript" src="static/js/reconnecting-websocket.min.js"></script>
+    <script type="text/javascript" src="static/js/application.js"></script>
     {{super()}}
 {% endblock %}
 
