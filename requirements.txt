@@ -22,7 +22,7 @@ MarkupSafe==1.1.1
 marshmallow==3.3.0
 marshmallow-sqlalchemy==0.21.0
 monotonic==1.5
-PyJWT==1.7.1
+PyJWT==2.4.0
 python-engineio==3.11.2
 python-socketio==4.4.0
 redis==3.3.11
